@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "47780203-0718-4de5-a607-d5d72ada945f",
+		"_postman_id": "391380d3-8a2b-43ed-a54c-2115dd7d9c3d",
 		"name": "CompanyUser",
 		"description": "The companyUser is a set of test for the applicationUser",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
@@ -14,7 +14,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"firstName\": \"john\",\r\n    \"lastName\":\"Doe\",\r\n    \"birthdate\": \"18/08/1985\",\r\n    \"phoneNumber\": \"+33667771245\",\r\n    \"email\": \"john@doe.fr\",\r\n    \"countryOfResidence\": \"FRANCE\",\r\n    \"gender\": \"M\"\r\n}",
+					"raw": "{\r\n    \"firstName\": \"John\",\r\n    \"lastName\":\"Doe\",\r\n    \"birthdate\": \"18/08/1985\",\r\n    \"phoneNumber\": \"+33667771245\",\r\n    \"email\": \"john@doe.fr\",\r\n    \"countryOfResidence\": \"FRANCE\",\r\n    \"gender\": \"M\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -22,7 +22,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/v1/users/register",
+					"raw": "http://localhost:8080/api/v1/users/",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -32,7 +32,7 @@
 						"api",
 						"v1",
 						"users",
-						"register"
+						""
 					]
 				}
 			},
@@ -45,7 +45,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\r\n    \"firstName\": \"john\",\r\n    \"lastName\":\"Doe\",\r\n    \"birthdate\": \"18/08/1985\",\r\n    \"phoneNumber\": \"+33667771245\",\r\n    \"email\": \"john@doe.fr\",\r\n    \"countryOfResidence\": \"FRANCE\",\r\n    \"gender\": \"M\"\r\n}",
+					"raw": "{\r\n    \"firstName\": \"Priscillia\",\r\n    \"lastName\":\"DUMAS\",\r\n    \"birthdate\": \"18/08/1985\",\r\n    \"phoneNumber\": \"+33689735245\",\r\n    \"email\": \"priscillia@dumas.fr\",\r\n    \"countryOfResidence\": \"FRANCE\",\r\n    \"gender\": \"F\"\r\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -53,7 +53,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/v1/users/register",
+					"raw": "http://localhost:8080/api/v1/users/",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -63,7 +63,38 @@
 						"api",
 						"v1",
 						"users",
-						"register"
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create User - errors",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n   \r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/users/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"users",
+						""
 					]
 				}
 			},
@@ -75,7 +106,18 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": ""
+					"raw": "http://localhost:8080/api/v1/users/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"users",
+						"1"
+					]
 				}
 			},
 			"response": []
@@ -86,7 +128,18 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": ""
+					"raw": "http://localhost:8080/api/v1/users/",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"users",
+						""
+					]
 				}
 			},
 			"response": []
@@ -96,8 +149,28 @@
 			"request": {
 				"method": "PUT",
 				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"firstName\": \"john\",\r\n    \"lastName\":\"Doe\",\r\n    \"birthdate\": \"18/08/1985\",\r\n    \"phoneNumber\": \"+33667771245\",\r\n    \"email\": \"john@doe.fr\",\r\n    \"countryOfResidence\": \"FRANCE\",\r\n    \"gender\": \"M\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
 				"url": {
-					"raw": ""
+					"raw": "http://localhost:8080/api/v1/users/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"users",
+						"1"
+					]
 				}
 			},
 			"response": []
@@ -107,8 +180,28 @@
 			"request": {
 				"method": "PATCH",
 				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"phoneNumber\": \"+33667771245\",\r\n    \"email\": \"john1@doe.fr\"\r\n    \r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
 				"url": {
-					"raw": ""
+					"raw": "http://localhost:8080/api/v1/users/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"users",
+						"1"
+					]
 				}
 			},
 			"response": []
@@ -119,7 +212,18 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": ""
+					"raw": "http://localhost:8080/api/v1/users/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"users",
+						"1"
+					]
 				}
 			},
 			"response": []

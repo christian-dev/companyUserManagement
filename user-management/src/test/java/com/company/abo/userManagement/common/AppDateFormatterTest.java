@@ -7,24 +7,22 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDate;
-
+import java.time.LocalDateTime;
 
 import com.company.abo.userManagement.config.CompanyAppProperties;
-
 
 
 @ExtendWith(SpringExtension.class)
 @Import(AppDateFormatterTestConfiguration.class)
 public class AppDateFormatterTest {
 	
-	@MockBean
+	@Autowired
 	private CompanyAppProperties companyAppProperties;
 	
 	@Autowired
@@ -32,26 +30,45 @@ public class AppDateFormatterTest {
 	
 	@BeforeEach
 	public void setUp() {
-		
 		when(companyAppProperties.getDateFormatPattern()).thenReturn("dd/MM/yyyy");
+		when(companyAppProperties.getDateTimeFormatPattern()).thenReturn("dd/MM/yyyy HH:mm:ss");
 	}
 	
 	@Test
-	public void testParseBirthdate() {
+	public void testParseDate() {
 		assertNotNull(appDateFormatter);
 		String sBirthdate = "18/08/2000";
-		LocalDate birthDate = appDateFormatter.parseBirthdate(sBirthdate);
-		assertEquals(birthDate.getYear(), 2000);
-		assertEquals(birthDate.getMonthValue(), 8);
-		assertEquals(birthDate.getDayOfMonth(), 18);
+		LocalDate birthDate = appDateFormatter.parseDate(sBirthdate);
+		assertEquals(2000, birthDate.getYear());
+		assertEquals(8, birthDate.getMonthValue());
+		assertEquals(18, birthDate.getDayOfMonth());
 	}
 
 	@Test
-	void testFormatBirthdate() {
+	void testFormatDate() {
 		assertNotNull(appDateFormatter);
-		LocalDate birthdate = LocalDate.of(2000, 8, 18);
-		String sBirthdate = appDateFormatter.formatBirthdate(birthdate);
-		assertEquals(sBirthdate, "18/08/2000");
+		LocalDate date = LocalDate.of(2000, 8, 18);
+		String sBirthdate = appDateFormatter.formatDate(date);
+		assertEquals("18/08/2000", sBirthdate);
+	}
+	
+	
+	@Test
+	public void testParseDateTime() {
+		assertNotNull(appDateFormatter);
+		String sDateTime = "18/08/2000 11:56:07";
+		LocalDateTime dateTime = appDateFormatter.parseDateTime(sDateTime);
+		assertEquals(2000, dateTime.getYear());
+		assertEquals(8, dateTime.getMonthValue());
+		assertEquals(18, dateTime.getDayOfMonth());
 	}
 
+	@Test
+	void testFormatDateTime() {
+		assertNotNull(appDateFormatter);
+		LocalDateTime dateTime = LocalDateTime.of(2000, 8, 18, 11, 56, 7);
+		String sDateTime = appDateFormatter.formatDateTime(dateTime);
+		assertEquals("18/08/2000 11:56:07", sDateTime);
+	}
+	
 }

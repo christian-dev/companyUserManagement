@@ -4,22 +4,24 @@ import static com.company.abo.userManagement.mapper.CompanyUserMapperTestConfigu
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import com.company.abo.userManagement.config.CompanyAppProperties;
 import com.company.abo.userManagement.dto.CompanyUserDto;
 import com.company.abo.userManagement.exception.CompanyUserNotFoundException;
 import com.company.abo.userManagement.exception.EmailAlreadyExistsException;
@@ -27,10 +29,15 @@ import com.company.abo.userManagement.mapper.CompanyUserMapper;
 import com.company.abo.userManagement.model.CompanyUser;
 import com.company.abo.userManagement.repository.CompanyUserRepository;
 
+import static org.mockito.Mockito.*;
+
 @ExtendWith(SpringExtension.class)
-@SpringBootTest
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Import(CompanyUserServiceTestConfiguration.class)
 public class CompanyUserServiceTest {
+	
+	@Autowired
+	private CompanyAppProperties companyAppProperties;
+	
 	@Autowired
 	private CompanyUserRepository companyUserRepository;
 	
@@ -41,26 +48,19 @@ public class CompanyUserServiceTest {
 	private CompanyUserService companyUserService;
 
 	@BeforeAll
-	public void setUpBeforeClass() throws Exception {
-		assertNotNull(companyUserRepository);
-
-		final List<CompanyUser> companyUsers = new ArrayList<>();
-		companyUsers.add(newCompanyUser (null, "John", "Doe", LocalDate.of(1985, 8, 18), "FRANCE", "+33667771245", "john@doe.fr" ,"M" ,null, null));
-		companyUsers.add(newCompanyUser (null, "Marc", "Simple", LocalDate.of(2000, 7, 11), "FRANCE", "+33685967265", "marc@simple.com" ,"M" ,null, null));
-		companyUsers.add(newCompanyUser (null, "Ahmed", "CHOUIA", LocalDate.of(1970, 5, 10), "FRANCE", "+33667776789", "ahmed@chouia.com" ,"M" ,null, null));
-		companyUsers.add(newCompanyUser (null, "Françoise", "NGANDA", LocalDate.of(1999, 1, 3), "FRANCE", "+33669991245", "francoise@nganda.com" ,"F" ,null, null));
-		companyUsers.add(newCompanyUser (null, "Patricia", "PARKER", LocalDate.of(1983, 9, 12), "FRANCE", "+33668881245", "patrica@parker.com" ,"F" ,null, null));
-		companyUserRepository.saveAll(companyUsers);
+	public static void setUpBeforeClass() throws Exception {
 
 	}
 
 	@AfterAll
-	public void tearDownAfterClass() throws Exception {
+	public static void tearDownAfterClass() throws Exception {
 	}
 
 	@BeforeEach
 	public void setUp() throws Exception {
-	
+		assertNotNull(companyUserService);
+		when(companyAppProperties.getDateFormatPattern()).thenReturn("dd/MM/yyyy");
+		when(companyAppProperties.getDateTimeFormatPattern()).thenReturn("dd/MM/yyyy HH:mm:ss");
 	}
 
 	@AfterEach
@@ -69,9 +69,17 @@ public class CompanyUserServiceTest {
 
 	@Test
 	public void given_CompanyUserDto_when_createCompanyUser_then_failsOnEmailAreadyExists() {
-		assertNotNull(companyUserService);
-
+		
+		
+		final LocalDate birthDate = LocalDate.of(1980, 9, 29); 
+		final LocalDateTime creationDate = LocalDateTime.of(2022, 8, 29, 15, 50, 9);
+		final LocalDateTime updateDate = LocalDateTime.of(2022, 8, 30, 16, 17, 20);
+		
 		final CompanyUserDto companyUserDto = newCompanyUserDto (null, "Johnny", "Doel", "10/05/1980", "FRANCE", "+33667771245", "john@doe.fr" ,"M" ,null, null);
+		final CompanyUser existingCompanyUser = newCompanyUser (1L, "John", "Doe", birthDate, "FRANCE", "+33667771245", "john@doe.fr" ,"M" ,creationDate, updateDate);
+		
+		final Optional<CompanyUser> optionalExistingCompanyUser = Optional.of(existingCompanyUser);
+		when(companyUserRepository.findByEmail("john@doe.fr")).thenReturn(optionalExistingCompanyUser);
 		assertThrows(EmailAlreadyExistsException.class,  
 				() -> {
 					companyUserService.createCompanyUser(companyUserDto);
@@ -81,23 +89,30 @@ public class CompanyUserServiceTest {
 	
 	@Test
 	public void given_CompanyUserDto_when_createCompanyUser_and_emailNotAreadyExists_then_success() {
-		assertNotNull(companyUserService);
-
-		CompanyUserDto companyUserDto = newCompanyUserDto (null, "Johnny", "Doel", "10/05/1980", "FRANCE", "+33667771245", "johnny@doe.fr" ,"M" ,null, null);
-	
+		
+		
+		final LocalDate birthDate = LocalDate.of(1980, 9, 29); 
+		final LocalDateTime creationDate = LocalDateTime.of(2022, 8, 29, 15, 50, 9);
+		final LocalDateTime updateDate = LocalDateTime.of(2022, 8, 30, 16, 17, 20);
+		
+		
+		CompanyUserDto companyUserDto = newCompanyUserDto (null, "John", "Doe", "29/09/1980", "FRANCE", "+33667771245", "john@doe.fr"  ,"M" ,null, null);
+		final CompanyUser createdCompanyUser = newCompanyUser (1L, "John", "Doe", birthDate, "FRANCE", "+33667771245", "john@doe.fr", "M", creationDate, updateDate); 
+		when(companyUserRepository.findByEmail("john@doe.fr")).thenReturn(Optional.empty());
+		when(companyUserRepository.save(companyUserMapper.companyUserDtoToEntity(companyUserDto))).thenReturn(createdCompanyUser);
 		companyUserDto = companyUserService.createCompanyUser(companyUserDto);
 		
 		assertNotNull(companyUserDto.getUserId());
-		companyUserRepository.deleteById(companyUserDto.getUserId());
 
 	}
 	
 	@Test
 	public void given_CompanyUserDto_when_updateCompanyUser_then_failsWhenIdNotExists() {
-		assertNotNull(companyUserService);
-
 		
-		final CompanyUserDto companyUserDto = newCompanyUserDto (10L, "John", "Doe", "10/05/1980", "FRANCE", "+33667771245", "john@doe.fr" ,"M" ,null, null);
+		final Long userId = 10L;
+		when(companyUserRepository.findById(userId)).thenReturn(Optional.empty());
+		
+		final CompanyUserDto companyUserDto = newCompanyUserDto (userId, "John", "Doe", "10/05/1980", "FRANCE", "+33667771245", "john@doe.fr" ,"M" ,null, null);
 		assertThrows(CompanyUserNotFoundException.class,  
 				() -> {
 					companyUserService.updateCompanyUser(10L, companyUserDto);
@@ -107,9 +122,21 @@ public class CompanyUserServiceTest {
 	
 	@Test
 	public void given_CompanyUserDto_when_updateCompanyUser_then_failsOnNewEmailAlreadyUsedByOtherUser() {
-		assertNotNull(companyUserService);
-
+		
+		final Long userId = 1L;
 		final CompanyUserDto companyUserDto = newCompanyUserDto (1L, "John", "Doe", "10/05/1980", "FRANCE", "+33667771245", "marc@simple.com" ,"M" ,null, null);
+		final Optional<CompanyUser> optionalCompanyUser = Optional.of(companyUserMapper.companyUserDtoToEntity(companyUserDto));
+		
+		final LocalDate birthDate = LocalDate.of(1980, 9, 29); 
+		final LocalDateTime creationDate = LocalDateTime.of(2022, 8, 29, 15, 50, 9);
+		final LocalDateTime updateDate = LocalDateTime.of(2022, 8, 30, 16, 17, 20);
+		final CompanyUser existingCompanyUser = newCompanyUser (5L, "Marc", "Simple", birthDate, "FRANCE", "+33667771245", "marc@simple.com" ,"M" ,creationDate, updateDate);
+		
+		final Optional<CompanyUser> otherExistingCompanyUser = Optional.of(existingCompanyUser);
+		final String emailAlreadyUsed = "marc@simple.com";
+		when(companyUserRepository.existsById(userId)).thenReturn(Boolean.TRUE);
+		when(companyUserRepository.findById(userId)).thenReturn(optionalCompanyUser);
+		when(companyUserRepository.findByEmail(emailAlreadyUsed)).thenReturn(otherExistingCompanyUser);
 		
 		assertThrows(EmailAlreadyExistsException.class,  
 				() -> {
@@ -120,13 +147,15 @@ public class CompanyUserServiceTest {
 	
 	@Test
 	public void given_CompanyUserDto_when_updateCompanyUser_then_sucess() {
-		assertNotNull(companyUserService);
-
-		final CompanyUserDto companyUserDto = newCompanyUserDto (1L, "John", "Doe", "10/05/1980", "FRANCE", "+33612345678", "johnny@doe.com" ,"M" ,null, null);
 		
-		companyUserService.updateCompanyUser(1L, companyUserDto);
-		
+		final Long userId = 1L;
+		final CompanyUserDto companyUserDto = newCompanyUserDto (userId, "John", "Doe", "10/05/1980", "FRANCE", "+33667771245", "marc@simple.com" ,"M" ,null, null);
+		final Optional<CompanyUser> optionalCompanyUser = Optional.of(companyUserMapper.companyUserDtoToEntity(companyUserDto));
 		companyUserDto.setEmail("john@doe.fr");
+		
+		when(companyUserRepository.findByEmail("john@doe.com")).thenReturn(Optional.empty());
+		when(companyUserRepository.findById(userId)).thenReturn(optionalCompanyUser);
+		when(companyUserRepository.existsById(userId)).thenReturn(Boolean.TRUE);
 		
 		companyUserService.updateCompanyUser(1L, companyUserDto);
 		
@@ -134,81 +163,107 @@ public class CompanyUserServiceTest {
 	
 	@Test
 	public void given_CompanyUserDto_when_patchCompanyUser_then_failsWhenIdNotExists() {
-		assertNotNull(companyUserService);
-
+		
+		final Long userId = 10L;
+		
 		final Map<String, String> valueMap = new HashMap<>();
 		valueMap.put("email", "john10@doe.fr");
 		valueMap.put("phoneNumber", "+33667771245");
+		
+		when(companyUserRepository.findById(userId)).thenReturn(Optional.empty());
+		
 		assertThrows(CompanyUserNotFoundException.class,  
 				() -> {
-					companyUserService.patchCompanyUser(10L, valueMap);
+					companyUserService.patchCompanyUser(userId, valueMap);
 				});
 
 	}
 	
 	@Test
 	public void given_CompanyUserDto_when_patchCompanyUser_then_failsWhenEmailAlreadUsed() {
-		assertNotNull(companyUserService);
-
+		final Long userId = 1L;
+		final CompanyUserDto companyUserDto = newCompanyUserDto (1L, "John", "Doe", "10/05/1980", "FRANCE", "+33667771245", "marc@simple.com" ,"M" ,null, null);
+		final Optional<CompanyUser> optionalCompanyUser = Optional.of(companyUserMapper.companyUserDtoToEntity(companyUserDto));
+		
+		final LocalDate birthDate = LocalDate.of(1980, 9, 29); 
+		final LocalDateTime creationDate = LocalDateTime.of(2022, 8, 29, 15, 50, 9);
+		final LocalDateTime updateDate = LocalDateTime.of(2022, 8, 30, 16, 17, 20);
+		final CompanyUser existingCompanyUser = newCompanyUser (5L, "Marc", "Simple", birthDate, "FRANCE", "+33667771245", "marc@simple.com" ,"M" ,creationDate, updateDate);
+		
+		final Optional<CompanyUser> otherExistingCompanyUser = Optional.of(existingCompanyUser);
+		final String emailAlreadyUsed = "marc@simple.com";
+		when(companyUserRepository.existsById(userId)).thenReturn(Boolean.TRUE);
+		when(companyUserRepository.findById(userId)).thenReturn(optionalCompanyUser);
+		when(companyUserRepository.findByEmail(emailAlreadyUsed)).thenReturn(otherExistingCompanyUser);
+		
 		final Map<String, String> valueMap = new HashMap<>();
-		valueMap.put("email", "marc@simple.com");
+		valueMap.put("email", emailAlreadyUsed);
 		valueMap.put("phoneNumber", "+33660001245");
 		assertThrows(EmailAlreadyExistsException.class,  
 				() -> {
-					companyUserService.patchCompanyUser(1L, valueMap);
+					companyUserService.patchCompanyUser(userId, valueMap);
 				});
 
 	}
 	
 	@Test
-	public void given_CompanyUserDto_when_patchCompanyUser_then_sucess() {
-		assertNotNull(companyUserService);
-
+	public void given_CompanyUserDto_when_patchCompanyUser_then_success() {
+		
+			
+		final Long userId = 1L;
+		final CompanyUserDto companyUserDto = newCompanyUserDto (userId, "John", "Doe", "10/05/1980", "FRANCE", "+33667771245", "marc@simple.com" ,"M" ,null, null);
+		final Optional<CompanyUser> optionalCompanyUser = Optional.of(companyUserMapper.companyUserDtoToEntity(companyUserDto));
+		companyUserDto.setEmail("john@doe.fr");
+		
+		when(companyUserRepository.findByEmail("john@doe.com")).thenReturn(Optional.empty());
+		when(companyUserRepository.findById(userId)).thenReturn(optionalCompanyUser);
+		when(companyUserRepository.existsById(userId)).thenReturn(Boolean.TRUE);
+		when(companyUserRepository.save(any(CompanyUser.class))).thenAnswer(s -> s.getArgument(0));
+		
 		final Map<String, String> valueMap = new HashMap<>();
 		valueMap.put("email", "john10@doe.fr");
 		valueMap.put("phoneNumber", "+33660001245");
 		
-		companyUserService.patchCompanyUser(1L, valueMap);
+		final CompanyUserDto patchedCompanyUserDto = companyUserService.patchCompanyUser(userId, valueMap);
+		assertEquals(patchedCompanyUserDto.getEmail(), "john10@doe.fr");
+		assertEquals(patchedCompanyUserDto.getPhoneNumber(), "+33660001245");
 		
-		valueMap.put("email", "john@doe.fr");
-		companyUserService.patchCompanyUser(1L, valueMap);
 	}
 	
 	@Test
 	public void given_CompanyUserDto_when_deleteCompanyUser_then_failsWhenIdNotExists() {
-		assertNotNull(companyUserService);
-
+		
+		final Long userId = 10L;
+		when(companyUserRepository.findById(userId)).thenReturn(Optional.empty());
 		assertThrows(CompanyUserNotFoundException.class,  
 				() -> {
-					companyUserService.deleteCompanyUser(10L);
+					companyUserService.deleteCompanyUser(userId);
 				});
 
 	}
 	
 	@Test
-	public void given_CompanyUserDto_when_deleteCompanyUser_then_success() {
-		assertNotNull(companyUserService);
-		CompanyUser companyUser = newCompanyUser (null, "Samantha", "LULOUA", LocalDate.of(1960, 6, 30), "FRANCE", "+33667771245", "samantha@luloua.fr" ,"F" ,null, null);
-		CompanyUserDto companyUserDto = companyUserMapper.companyUserEntityToDto(companyUserRepository.save(companyUser)); 
-		final Long userId = companyUserDto.getUserId();
-		assertNotNull(userId);
+	public void given_existing_CompanyUserDto_when_deleteCompanyUser_then_success() {
 		
-		companyUserService.deleteCompanyUser(userId);
+		final Long userId = 25L;
+		final CompanyUser companyUser = newCompanyUser (userId, "Samantha", "LULOUA", LocalDate.of(1960, 6, 30), "FRANCE", "+33667771245", "samantha@luloua.fr" ,"F" ,null, null);
 		
-		assertThrows(CompanyUserNotFoundException.class,  
-				() -> {
-					companyUserService.getCompanyUserDetails(userId);
-				});
+		when(companyUserRepository.findById(userId)).thenReturn(Optional.of(companyUser));
 		
+		final Map<String, Object> deleteResult = companyUserService.deleteCompanyUser(userId);
+		
+		assertEquals(deleteResult.get("userId"), userId);
+		assertEquals(deleteResult.get("deleted"), Boolean.TRUE);
 	}
 	
 
 	
 	@Test
 	public void given_CompanyUserDto_when_getCompanyUserDetails_by_id_then_failsWhenIdNotExists() {
-		assertNotNull(companyUserService);
+		
 		
 		final Long userId = 10L;
+		when(companyUserRepository.findById(userId)).thenReturn(Optional.empty());
 		
 		assertThrows(CompanyUserNotFoundException.class,  
 				() -> {
@@ -220,36 +275,77 @@ public class CompanyUserServiceTest {
 	
 	@Test
 	public void given_CompanyUserDto_when_getCompanyUserDetails_then_sucess() {
-		assertNotNull(companyUserService);
 		
-		final Long userId = 1L;
+		
+		final Long userId = 5L;
+		final LocalDate birthDate = LocalDate.of(1980, 9, 29); 
+		final LocalDateTime creationDate = LocalDateTime.of(2022, 8, 29, 15, 50, 9);
+		final LocalDateTime updateDate = LocalDateTime.of(2022, 8, 30, 16, 17, 20);
+		final CompanyUser existingCompanyUser = newCompanyUser (userId, "Marc", "Simple", birthDate, "FRANCE", "+33667771245", "marc@simple.com" ,"M" ,creationDate, updateDate);
+		when(companyUserRepository.findById(userId)).thenReturn(Optional.of(existingCompanyUser));
 		
 		CompanyUserDto companyUserDto = companyUserService.getCompanyUserDetails(userId);
-		assertEquals(companyUserDto.getEmail(), "john@doe.fr");
-
+		assertEquals(userId, companyUserDto.getUserId());
+		assertEquals("marc@simple.com", companyUserDto.getEmail());
+		assertEquals("Marc", companyUserDto.getFirstName());
+		assertEquals("Simple", companyUserDto.getLastName());
+		assertEquals("29/09/1980", companyUserDto.getBirthdate());
+		assertEquals("FRANCE", companyUserDto.getCountryOfResidence());
+		assertEquals("+33667771245", companyUserDto.getPhoneNumber());
+		assertEquals("M", companyUserDto.getGender());
 	}
 	
 	@Test
 	public void given_CompanyUserDto_when_getCompanyUserDetails_by_name_then_sucess() {
-		assertNotNull(companyUserService);
 		
-		final String firstName = "John";
-		final String lastName = "Doe";
-
+		final Long userId = 5L;
+		final LocalDate birthDate = LocalDate.of(1980, 9, 29); 
+		final LocalDateTime creationDate = LocalDateTime.of(2022, 8, 29, 15, 50, 9);
+		final LocalDateTime updateDate = LocalDateTime.of(2022, 8, 30, 16, 17, 20);
+		final CompanyUser existingCompanyUser = newCompanyUser (userId, "Marc", "Simple", birthDate, "FRANCE", "+33667771245", "marc@simple.com" ,"M" ,creationDate, updateDate);
+		
+		final List<CompanyUser> foundUserList = new ArrayList<>();
+		foundUserList.add(existingCompanyUser);
+		final String firstName = "Marc";
+		final String lastName = "Simple";
+		when(companyUserRepository.findByFirstNameAndLastName(firstName, lastName)).thenReturn(foundUserList);
+		
 		List<CompanyUserDto> companyUserDtos = companyUserService.getCompanyUserDetails(firstName, lastName);
-		assertEquals(companyUserDtos.size(), 1);
-		assertEquals(companyUserDtos.get(0).getEmail(), "john@doe.fr");
+		assertEquals(1, companyUserDtos.size());
+		final CompanyUserDto companyUserDto = companyUserDtos.get(0);
+		
+		assertEquals(userId, companyUserDto.getUserId());
+		assertEquals("marc@simple.com", companyUserDto.getEmail());
+		assertEquals("Marc", companyUserDto.getFirstName());
+		assertEquals("Simple", companyUserDto.getLastName());
+		assertEquals("29/09/1980", companyUserDto.getBirthdate());
+		assertEquals("FRANCE", companyUserDto.getCountryOfResidence());
+		assertEquals("+33667771245", companyUserDto.getPhoneNumber());
+		assertEquals("M", companyUserDto.getGender());
 
 	}
 	
 	@Test
-	public void given_CompanyUserDto_when_getCompanyUserDetails_by_emailthen_sucess() {
-		assertNotNull(companyUserService);
+	public void given_CompanyUserDto_when_getCompanyUserDetails_by_email_then_sucess() {
 		
-		final String email = "john@doe.fr";
+		final Long userId = 5L;
+		final String email = "marc@simple.com";
+		final LocalDate birthDate = LocalDate.of(1980, 9, 29); 
+		final LocalDateTime creationDate = LocalDateTime.of(2022, 8, 29, 15, 50, 9);
+		final LocalDateTime updateDate = LocalDateTime.of(2022, 8, 30, 16, 17, 20);
+		final CompanyUser existingCompanyUser = newCompanyUser (userId, "Marc", "Simple", birthDate, "FRANCE", "+33667771245", email ,"M" ,creationDate, updateDate);
+		
+		when(companyUserRepository.findByEmail(email)).thenReturn(Optional.of(existingCompanyUser));
 		
 		CompanyUserDto companyUserDto = companyUserService.getCompanyUserDetails(email);
-		assertEquals(companyUserDto.getUserId(), 1L);
+		assertEquals(userId, companyUserDto.getUserId());
+		assertEquals(email, companyUserDto.getEmail());
+		assertEquals("Marc", companyUserDto.getFirstName());
+		assertEquals("Simple", companyUserDto.getLastName());
+		assertEquals("29/09/1980", companyUserDto.getBirthdate());
+		assertEquals("FRANCE", companyUserDto.getCountryOfResidence());
+		assertEquals("+33667771245", companyUserDto.getPhoneNumber());
+		assertEquals("M", companyUserDto.getGender());
 		
 	}
 

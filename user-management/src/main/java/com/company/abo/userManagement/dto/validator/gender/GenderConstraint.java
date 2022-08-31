@@ -9,6 +9,12 @@ import java.lang.annotation.Target;
 import javax.validation.Constraint;
 import javax.validation.Payload;
 
+/**
+ * Annotation to validate the gender of an user.
+ * Fpr example gender must be M, F
+ * @author ABO
+ *
+ */
 @Documented
 @Constraint(validatedBy=GenderValidator.class)
 @Target({ElementType.METHOD, ElementType.FIELD})

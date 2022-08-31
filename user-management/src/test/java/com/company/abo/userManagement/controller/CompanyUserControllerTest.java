@@ -2,141 +2,269 @@ package com.company.abo.userManagement.controller;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.time.LocalDate;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
+import javax.servlet.ServletContext;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockServletContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import com.company.abo.userManagement.controller.exceptionHandler.CompanyUserErrorResponse;
+import com.company.abo.userManagement.config.CompanyAppProperties;
+import com.company.abo.userManagement.controller.exceptionHandler.CompanyUserExceptionHandler;
 import com.company.abo.userManagement.dto.CompanyUserDto;
-import com.company.abo.userManagement.model.CompanyUser;
-import com.company.abo.userManagement.repository.CompanyUserRepository;
+import com.company.abo.userManagement.exception.CompanyUserNotFoundException;
+import com.company.abo.userManagement.exception.EmailAlreadyExistsException;
+import com.company.abo.userManagement.service.CompanyUserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
-import static com.company.abo.userManagement.mapper.CompanyUserMapperTestConfiguration.*;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Import(CompanyUserControllerTestConfig.class)
+@WebAppConfiguration
 public class CompanyUserControllerTest {
 	
-	@LocalServerPort
-	private int port;
+	@Autowired
+	private WebApplicationContext webApplicationContext;
 	
 	@Autowired
-	private TestRestTemplate restTemplate;
+	private CompanyUserService companyUserService;
 	
 	@Autowired
-	private CompanyUserRepository companyUserRepository;
+	private CompanyUserController companyUserController;
 	
-	private String url;
-	@BeforeAll
-	public void setUpBeforeClass() throws Exception {
-		assertNotNull(companyUserRepository);
-
-		final List<CompanyUser> companyUsers = new ArrayList<>();
-		companyUsers.add(newCompanyUser (null, "John", "Doe", LocalDate.of(1985, 8, 18), "FRANCE", "+33667771245", "john@doe.fr" ,"M" ,null, null));
-		companyUsers.add(newCompanyUser (null, "Marc", "Simple", LocalDate.of(2000, 7, 11), "FRANCE", "+33685967265", "marc@simple.com" ,"M" ,null, null));
-		companyUsers.add(newCompanyUser (null, "Ahmed", "CHOUIA", LocalDate.of(1970, 5, 10), "FRANCE", "+33667776789", "ahmed@chouia.com" ,"M" ,null, null));
-		companyUsers.add(newCompanyUser (null, "Françoise", "NGANDA", LocalDate.of(1999, 1, 3), "FRANCE", "+33669991245", "francoise@nganda.com" ,"F" ,null, null));
-		companyUsers.add(newCompanyUser (null, "Patricia", "PARKER", LocalDate.of(1983, 9, 12), "FRANCE", "+33668881245", "patrica@parker.com" ,"F" ,null, null));
-		companyUserRepository.saveAll(companyUsers);
-		
-		this.url = "http://localhost:" + port + "/" + "api/v1/users/";
-	}
-
-	@AfterAll
-	static void tearDownAfterClass() throws Exception {
-	}
-
+	@Autowired
+	private CompanyUserExceptionHandler companyUserExceptionHandler;
+	
+	@Autowired
+	private CompanyAppProperties companyAppProperties;
+	
+	@Autowired
+	private LocalValidatorFactoryBean localValidatorFactoryBean;
+	
+	private MockMvc mockMvc;
+	
 	@BeforeEach
 	void setUp() throws Exception {
+		when(companyAppProperties.getDateFormatPattern()).thenReturn("dd/MM/yyyy");
+		when(companyAppProperties.getDateTimeFormatPattern()).thenReturn("dd/MM/yyyy HH:mm:ss");
+		
+		final List<String> validCountryOfResidences = new ArrayList<>();
+		validCountryOfResidences.add("FRANCE"); 
+		
+		final List<String> validGenders = new ArrayList<>();
+		validGenders.add("M"); 
+		validGenders.add("F");
+ 
+ 		when(companyAppProperties.getValidCountryOfResidences()).thenReturn(validCountryOfResidences);
+ 		when(companyAppProperties.getAdulteAge()).thenReturn(18);
+ 		when(companyAppProperties.getValidGenders()).thenReturn(validGenders);
+		
+		this.mockMvc = MockMvcBuilders
+				.standaloneSetup(companyUserController)
+				.setValidator(localValidatorFactoryBean)
+				.setControllerAdvice(companyUserExceptionHandler)
+				.build();
+		
 	}
-
-	@AfterEach
-	void tearDown() throws Exception {
-	}
-
 	
 	@Test
-	public void given_user_id_getDetails_then_failsOnUserNotExists() {
+	public void given_WebAppContext_check_controller() {
+		ServletContext servletContext = webApplicationContext.getServletContext();
+		
+		assertNotNull(servletContext);
+		assertTrue(servletContext instanceof MockServletContext);
+		assertNotNull(webApplicationContext.getBean(CompanyUserController.class));
+		assertNotNull(webApplicationContext.getBean(CompanyUserExceptionHandler.class));
+	}
+	
+	@Test
+	public void given_user_id_getDetails_then_failsOnUserNotExists() throws Exception {
 		final Long userId = 10L;
-		ResponseEntity<CompanyUserDto> responseEntity = restTemplate.getForEntity(this.url + "/" + userId, CompanyUserDto.class);
-	
-		assertEquals(responseEntity.getStatusCode(), HttpStatus.NOT_FOUND);
+		when(companyUserService.getCompanyUserDetails(anyLong())).thenThrow(CompanyUserNotFoundException.class);
+		this.mockMvc.perform(get("/users/" + userId))
+			.andExpect(status().isNotFound())
+			.andExpect(result -> assertTrue(result.getResolvedException() instanceof CompanyUserNotFoundException));		
 	}
 	
 	@Test
-	public void given_valid_user_id_getDetails_then_success() {
-		final Long userId = 1L;
-		ResponseEntity<CompanyUserDto> responseEntity = restTemplate.getForEntity(this.url + "/" + userId, CompanyUserDto.class);
-		CompanyUserDto companyUser = responseEntity.getBody();
-		assertEquals(companyUser.getEmail(), "john@doe.fr");
-		assertEquals(responseEntity.getStatusCode(), HttpStatus.OK);
+	public void given_existing_user_id_getDetails_then_success() throws Exception {
+		final Long userId = 10L;
+		final String firstName = "John";
+		final String lastName = "Doe";
+		final String birthdate = "17/09/2000";
+		final String countryOfResidence = "FRANCE";
+		final String phoneNumber = "+33689567412";
+		final String email = "john@doe.com";
+		final String gender = "M";
+		final String creationDate = "13/05/2000 11:15:09"; 
+		final String updateDate = "30/08/2022 09:52:11";
+		final CompanyUserDto companyUserDto = new CompanyUserDto(
+				userId, firstName, lastName, birthdate, countryOfResidence, phoneNumber, email, gender, creationDate, updateDate);
+		
+		when(companyUserService.getCompanyUserDetails(userId)).thenReturn(companyUserDto);
+		
+		
+		this.mockMvc.perform(get("/users/" + userId))
+		.andExpect(status().isOk())
+		.andExpect(jsonPath("userId").value(userId))
+		.andExpect(jsonPath("firstName").value(firstName))
+		.andExpect(jsonPath("lastName").value(lastName))
+		.andExpect(jsonPath("birthdate").value(birthdate))
+		.andExpect(jsonPath("phoneNumber").value(phoneNumber))
+		.andExpect(jsonPath("email").value(email))
+		.andExpect(jsonPath("countryOfResidence").value(countryOfResidence))
+		.andExpect(jsonPath("gender").value(gender))
+		.andExpect(jsonPath("creationDate").value(creationDate))
+		.andExpect(jsonPath("updateDate").value(updateDate));
+		
 	}
 
+	
 	@Test
-	public void register_invalid_CompanyUser_InvalidEmail_should_failed() {
-		CompanyUserDto companyUserDto = newCompanyUserDto (null, "Priscillia", "DUMAS", "17/10/2000", "FRANCE", "+33667771245", "Priscillia_email" ,"F" ,null, null);
-		ResponseEntity<CompanyUserErrorResponse> responseEntity = restTemplate.postForEntity(this.url + "/" + "register", companyUserDto, CompanyUserErrorResponse.class);
+	public void register_invalid_CompanyUser_InvalidEmail_should_failed() throws Exception {
+
+		final Long userId = null;
+		final String firstName = "John";
+		final String lastName = "Doe";
+		final String birthdate = "17/09/2000";
+		final String countryOfResidence = "FRANCE";
+		final String phoneNumber = "+33689567412";
+		final String email = "john.doe.com";
+		final String gender = "M";
 		
-		assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
+		final CompanyUserDto companyUserDto = new CompanyUserDto(
+				userId, firstName, lastName, birthdate, countryOfResidence, phoneNumber, email, gender, null, null);
+		final ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+		ObjectWriter objectWriter = objectMapper.writer().withDefaultPrettyPrinter();
+		final String jsonContent = objectWriter.writeValueAsString(companyUserDto);
+		final URI uri = UriComponentsBuilder.fromUriString("/users/").build().encode().toUri();
+		
+		mockMvc.perform(post(uri)
+				.accept(MediaType.APPLICATION_JSON)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(jsonContent))
+				.andExpect(status().isBadRequest());
+	}
+	
+	
+	@Test
+	public void register_invalid_CompanyUser_emailAlreadyUsed_should_failed() throws Exception{
+		when(companyUserService.createCompanyUser(any(CompanyUserDto.class))).thenThrow(EmailAlreadyExistsException.class);
+		
+		final Long userId = null;
+		final String firstName = "John";
+		final String lastName = "Doe";
+		final String birthdate = "17/09/2000";
+		final String countryOfResidence = "FRANCE";
+		final String phoneNumber = "+33689567412";
+		final String email = "john@doe.com";
+		final String gender = "M";
+		
+		final CompanyUserDto companyUserDto = new CompanyUserDto(
+				userId, firstName, lastName, birthdate, countryOfResidence, phoneNumber, email, gender, null, null);
+		final ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+		ObjectWriter objectWriter = objectMapper.writer().withDefaultPrettyPrinter();
+		final String jsonContent = objectWriter.writeValueAsString(companyUserDto);
+		final URI uri = UriComponentsBuilder.fromUriString("/users/").build().encode().toUri();
+		
+		mockMvc.perform(post(uri)
+				.accept(MediaType.APPLICATION_JSON)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(jsonContent))
+				.andExpect(status().isBadRequest());
+	}
+	
+	
+	@Test
+	public void register_invalid_CompanyUser_non_adult_should_failed() throws Exception{
+		
+ 		final CompanyUserDto companyUserDto = new CompanyUserDto (null, "Priscillia", "DUMAS", "17/10/2018", "FRANCE", "+33667771245", "priscillia@dumas.fr" ,"F" ,null, null);
+		final ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+		ObjectWriter objectWriter = objectMapper.writer().withDefaultPrettyPrinter();
+		final String jsonContent = objectWriter.writeValueAsString(companyUserDto);
+		final URI uri = UriComponentsBuilder.fromUriString("/users/").build().encode().toUri();
+		
+		mockMvc.perform(post(uri)
+				.accept(MediaType.APPLICATION_JSON)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(jsonContent))
+				.andExpect(status().isBadRequest())
+				.andReturn().getResolvedException();
+		
 	}
 	
 	@Test
-	public void register_invalid_CompanyUser_emailAlreadyUsed_should_failed() {
-		CompanyUserDto companyUserDto = newCompanyUserDto (null, "Priscillia", "DUMAS", "17/10/2000", "FRANCE", "+33667771245", "john@doe.fr" ,"F" ,null, null);
-		ResponseEntity<CompanyUserErrorResponse> responseEntity = restTemplate.postForEntity(this.url + "/" + "register", companyUserDto, CompanyUserErrorResponse.class);
+	public void register_invalid_CompanyUser_non_French_resident_should_failed() throws Exception{
+		CompanyUserDto companyUserDto = new CompanyUserDto (null, "Priscillia", "DUMAS", "17/10/2000", "ENGLAND", "+33667771245", "priscillia@dumas.fr" ,"F" ,null, null);
+		final ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+		ObjectWriter objectWriter = objectMapper.writer().withDefaultPrettyPrinter();
+		final String jsonContent = objectWriter.writeValueAsString(companyUserDto);
+		final URI uri = UriComponentsBuilder.fromUriString("/users/").build().encode().toUri();
 		
-		assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
+		mockMvc.perform(post(uri)
+				.accept(MediaType.APPLICATION_JSON)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(jsonContent))
+				.andExpect(status().isBadRequest());
 	}
 	
 	@Test
-	public void register_invalid_CompanyUser_non_adult_should_failed() {
-		CompanyUserDto companyUserDto = newCompanyUserDto (null, "Priscillia", "DUMAS", "17/10/2020", "FRANCE", "+33667771245", "priscillia@dumas.fr" ,"F" ,null, null);
-		ResponseEntity<CompanyUserErrorResponse> responseEntity = restTemplate.postForEntity(this.url + "/" + "register", companyUserDto, CompanyUserErrorResponse.class);
+	public void register_invalid_CompanyUser_not_valid_gender_should_failed() throws Exception {
+		CompanyUserDto companyUserDto = new CompanyUserDto (null, "Priscillia", "DUMAS", "17/10/2000", "FRANCE", "+33667771245", "priscillia@dumas.fr" ,"A" ,null, null);
+		final ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+		ObjectWriter objectWriter = objectMapper.writer().withDefaultPrettyPrinter();
+		final String jsonContent = objectWriter.writeValueAsString(companyUserDto);
+		final URI uri = UriComponentsBuilder.fromUriString("/users/").build().encode().toUri();
 		
-		assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
+		mockMvc.perform(post(uri)
+				.accept(MediaType.APPLICATION_JSON)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(jsonContent))
+				.andExpect(status().isBadRequest());
 	}
 	
 	@Test
-	public void register_invalid_CompanyUser_non_French_resident_should_failed() {
-		CompanyUserDto companyUserDto = newCompanyUserDto (null, "Priscillia", "DUMAS", "17/10/2000", "ENGLAND", "+33667771245", "priscillia@dumas.fr" ,"F" ,null, null);
-		ResponseEntity<CompanyUserErrorResponse> responseEntity = restTemplate.postForEntity(this.url + "/" + "register", companyUserDto, CompanyUserErrorResponse.class);
+	public void register_valid_CompanyUser_should_sucess() throws Exception {
+	
+		final CompanyUserDto companyUserDto = new CompanyUserDto (null, "Priscillia", "DUMAS", "17/10/2000", "FRANCE", "+33668881245", "priscillia@dumas.fr" ,"F" ,null, null);
+		final ObjectMapper objectMapper = new ObjectMapper();
+		objectMapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+		ObjectWriter objectWriter = objectMapper.writer().withDefaultPrettyPrinter();
+		final String jsonContent = objectWriter.writeValueAsString(companyUserDto);
+		final URI uri = UriComponentsBuilder.fromUriString("/users/").build().encode().toUri();
 		
-		assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
+		mockMvc.perform(post(uri)
+				.accept(MediaType.APPLICATION_JSON)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(jsonContent))
+				.andExpect(status().isCreated());
 	}
 	
-	@Test
-	public void register_invalid_CompanyUser_not_valid_gender_should_failed() {
-		CompanyUserDto companyUserDto = newCompanyUserDto (null, "Priscillia", "DUMAS", "17/10/2000", "FRANCE", "+33667771245", "priscillia@dumas.fr" ,"A" ,null, null);
-		ResponseEntity<CompanyUserErrorResponse> responseEntity = restTemplate.postForEntity(this.url + "/" + "register", companyUserDto, CompanyUserErrorResponse.class);
-		
-		assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
-	}
-	
-	@Test
-	public void register_valid_CompanyUser_should_sucess() {
-		CompanyUserDto companyUserDto = newCompanyUserDto (null, "Priscillia", "DUMAS", "17/10/2000", "FRANCE", "+33668881245", "priscillia@dumas.fr" ,"F" ,null, null);
-		ResponseEntity<CompanyUserDto> responseEntity = restTemplate.postForEntity(this.url + "/" + "register", companyUserDto, CompanyUserDto.class);
-		
-		assertEquals(responseEntity.getStatusCode(), HttpStatus.CREATED);
-		companyUserDto = responseEntity.getBody();
-		companyUserRepository.deleteById(companyUserDto.getUserId()); //Clean
-	}
 	
 }

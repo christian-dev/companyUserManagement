@@ -1,5 +1,10 @@
 package com.company.abo.userManagement.exception;
 
+/**
+ * Runtime Exception thrown on user not found in the application
+ * @author ABO
+ *
+ */
 public class CompanyUserNotFoundException extends RuntimeException {
 
 	/**

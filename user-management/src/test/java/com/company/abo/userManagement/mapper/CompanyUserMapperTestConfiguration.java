@@ -1,7 +1,7 @@
 package com.company.abo.userManagement.mapper;
 
-import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import org.mapstruct.factory.Mappers;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -30,8 +30,8 @@ public class CompanyUserMapperTestConfiguration {
 				"+33667771245",
 				"john@doe.fr",
 				"M", 
-				null,
-				null);
+				"30/07/2022 11:30:03", 
+				"29/08/2022 16:25:16");
 	}
 
 	public static CompanyUser referenceCompanyUser(final Long userId) {
@@ -42,10 +42,10 @@ public class CompanyUserMapperTestConfiguration {
 				LocalDate.of(1985, 8, 18),
 				"FRANCE",
 				"+33667771245",
-				"john@doe.fr"
-				,"M"
-				,null,
-				null);
+				"john@doe.fr",
+				"M",
+				LocalDateTime.of(2022,7,30,11,30,3), 
+				LocalDateTime.of(2022,8,29,16,25,16));
 		
 	}
 	
@@ -58,8 +58,8 @@ public class CompanyUserMapperTestConfiguration {
 			String phoneNumber,
 			String email,
 			String gender, 
-			Timestamp creationDate,
-			Timestamp updateDate) {
+			LocalDateTime creationDate,
+			LocalDateTime updateDate) {
 		CompanyUser companyUser = new CompanyUser();
 
 		companyUser.setUserId(userId);
@@ -86,8 +86,8 @@ public class CompanyUserMapperTestConfiguration {
 			String phoneNumber,
 			String email,
 			String gender, 
-			Timestamp creationDate,
-			Timestamp updateDate) {
+			String creationDate,
+			String updateDate) {
 		return new CompanyUserDto(userId, firstName, lastName, birthdate, countryOfResidence, phoneNumber, email, gender, creationDate, updateDate);
 	}
 }

@@ -1,9 +1,8 @@
 package com.company.abo.userManagement.model;
 
 import java.io.Serializable;
-import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import javax.persistence.Basic;
 import javax.persistence.Column;
@@ -20,6 +19,11 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+/**
+ * Repository entiy class mapped to the table COMPANY_USER
+ * @author ABO
+ *
+ */
 @Entity
 @Table(name = "COMPANY_USER")
 @Data
@@ -66,13 +70,13 @@ public class CompanyUser implements Serializable{
 	private String gender;
 	
 	@Basic
-	@Column(name = "CREATION_DATE")
+	@Column(name = "CREATION_DATE", updatable=false)
 	@CreationTimestamp
-	private Timestamp creationDate;
+	private LocalDateTime creationDate;
 	
 	@Basic
 	@Column(name = "UPDATE_DATE")
 	@UpdateTimestamp
-	private Timestamp updateDate;
+	private LocalDateTime updateDate;
 	
 }

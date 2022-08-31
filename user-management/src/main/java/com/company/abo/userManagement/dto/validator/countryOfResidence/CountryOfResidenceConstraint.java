@@ -9,6 +9,12 @@ import java.lang.annotation.Target;
 import javax.validation.Constraint;
 import javax.validation.Payload;
 
+/**
+ * Annotation to valiate the country of residence of an user
+ * For example FRANCE
+ * @author ABO
+ *
+ */
 @Documented
 @Constraint(validatedBy=CountryOfResidenceValidator.class)
 @Target({ElementType.METHOD, ElementType.FIELD})

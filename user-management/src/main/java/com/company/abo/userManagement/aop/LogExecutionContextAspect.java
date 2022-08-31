@@ -8,11 +8,22 @@ import org.springframework.stereotype.Component;
 
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Class for the AOP to log execution duration, method parameters, ...
+ * @author ABO
+ *
+ */
 @Aspect
 @Component
 @Slf4j
 public class LogExecutionContextAspect {
 	
+	/**
+	 * Log the execution context for a method : duration, input parameters, output parameters, ..., 
+	 * @param joinPoint
+	 * @return
+	 * @throws Throwable
+	 */
 	@Around("@annotation(LogExecutionContext)")
 	public Object logExceutionContext(ProceedingJoinPoint joinPoint) throws Throwable {
 		final long start = System.currentTimeMillis();

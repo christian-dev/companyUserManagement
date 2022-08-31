@@ -9,6 +9,12 @@ import java.lang.annotation.Target;
 import javax.validation.Constraint;
 import javax.validation.Payload;
 
+/**
+ * Annotaton for check the BirthDate. 
+ * For example the adulemust have age >= 18
+ * @author ABO
+ *
+ */
 @Documented
 @Constraint(validatedBy=BirthDateValidator.class)
 @Target({ElementType.METHOD, ElementType.FIELD})

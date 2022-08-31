@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.company.abo.userManagement.model.CompanyUser;
@@ -25,7 +23,6 @@ import static com.company.abo.userManagement.mapper.CompanyUserMapperTestConfigu
 
 
 @ExtendWith(SpringExtension.class)
-//@Import({CompanyUserMapperTestConfiguration.class, AppDateFormatterTestConfiguration.class})
 @DataJpaTest
 public class CompanyUserRepositoryTest {
 	
@@ -61,7 +58,7 @@ public class CompanyUserRepositoryTest {
 		assertNotNull(companyUserRepository);
 			
 		List<CompanyUser> allCompanyUsers = companyUserRepository.findAll();
-		assertTrue(allCompanyUsers.size() == 5);
+		assertEquals(5, allCompanyUsers.size());
 		
 		assertNotNull(allCompanyUsers.get(0).getUserId());
 		assertNotNull(allCompanyUsers.get(1).getUserId());
@@ -76,8 +73,8 @@ public class CompanyUserRepositoryTest {
 		
 			
 		List<CompanyUser> allCompanyUsers = companyUserRepository.findAllByFirstName("Patricia");
-		assertTrue(allCompanyUsers.size() == 1);
-		assertEquals(allCompanyUsers.get(0).getEmail(), "patrica@parker.com");
+		assertEquals(1, allCompanyUsers.size());
+		assertEquals("patrica@parker.com", allCompanyUsers.get(0).getEmail());
 	}
 
 	@Test
@@ -86,8 +83,8 @@ public class CompanyUserRepositoryTest {
 		
 			
 		List<CompanyUser> allCompanyUsers = companyUserRepository.findAllByLastName("Doe");
-		assertTrue(allCompanyUsers.size() == 1);
-		assertEquals(allCompanyUsers.get(0).getEmail(), "john@doe.fr");
+		assertEquals(1, allCompanyUsers.size());
+		assertEquals("john@doe.fr", allCompanyUsers.get(0).getEmail());
 	}
 	
 	@Test
@@ -96,10 +93,10 @@ public class CompanyUserRepositoryTest {
 		
 			
 		List<CompanyUser> allCompanyUsers = companyUserRepository.findAllByGender("F");
-		assertTrue(allCompanyUsers.size() == 2);
+		assertEquals(2, allCompanyUsers.size());
 		
 		allCompanyUsers = companyUserRepository.findAllByGender("M");
-		assertTrue(allCompanyUsers.size() == 3);
+		assertEquals(3, allCompanyUsers.size());
 	}
 	
 	@Test
@@ -108,8 +105,8 @@ public class CompanyUserRepositoryTest {
 		
 			
 		List<CompanyUser> allCompanyUsers = companyUserRepository.findAllByPhoneNumber("+33669991245");
-		assertTrue(allCompanyUsers.size() == 1);
-		assertEquals(allCompanyUsers.get(0).getEmail(), "francoise@nganda.com");
+		assertEquals(1, allCompanyUsers.size());
+		assertEquals("francoise@nganda.com", allCompanyUsers.get(0).getEmail());
 	}
 	
 	@Test
@@ -119,8 +116,8 @@ public class CompanyUserRepositoryTest {
 		final Optional<CompanyUser> companyUser = companyUserRepository.findByEmail("john@doe.fr");
 		
 		assertTrue(companyUser.isPresent());
-		assertEquals(companyUser.get().getFirstName(), "John");
-		assertEquals(companyUser.get().getLastName(), "Doe");
+		assertEquals("John", companyUser.get().getFirstName());
+		assertEquals("Doe", companyUser.get().getLastName());
 	}
 	
 	
@@ -129,8 +126,8 @@ public class CompanyUserRepositoryTest {
 		assertNotNull(companyUserRepository);
 				
 		List<CompanyUser> allCompanyUsers = companyUserRepository.findByFirstNameAndLastName("Patricia", "PARKER");
-		assertTrue(allCompanyUsers.size() == 1);
-		assertEquals(allCompanyUsers.get(0).getEmail(), "patrica@parker.com");
+		assertEquals(1, allCompanyUsers.size());
+		assertEquals("patrica@parker.com", allCompanyUsers.get(0).getEmail());
 	}
 	
 	

@@ -1,10 +1,10 @@
 package com.company.abo.userManagement.service.impl;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,15 +17,25 @@ import com.company.abo.userManagement.model.CompanyUser;
 import com.company.abo.userManagement.repository.CompanyUserRepository;
 import com.company.abo.userManagement.service.CompanyUserService;
 
+import lombok.RequiredArgsConstructor;
+
+/**
+ * Implementation of the service layer CompanyUserService
+ * @see CompanyUserService
+ * @author ABO
+ *
+ */
 @Service
+@RequiredArgsConstructor
 public class CompanyUserServiceImpl implements CompanyUserService {
 	
-	@Autowired
-	private CompanyUserRepository companyUserRepository;
+	private final CompanyUserRepository companyUserRepository;
 	
-	@Autowired
-	private CompanyUserMapper companyUserMapper;
+	private final CompanyUserMapper companyUserMapper;
 	
+	/**
+	 * @see CompanyUserService#createCompanyUser(CompanyUserDto)
+	 */
 	@Transactional
 	@LogExecutionContext
 	@Override
@@ -42,12 +52,19 @@ public class CompanyUserServiceImpl implements CompanyUserService {
 		return companyUserMapper.companyUserEntityToDto(companyUser);
 	}
 	
+	/**
+	 * @see CompanyUserService#updateCompanyUser(Long, CompanyUserDto)
+	 * 
+	 */
 	@LogExecutionContext
 	@Override
 	public CompanyUserDto updateCompanyUser(final Long userId, final CompanyUserDto companyUserDto) {
 		return update(userId, companyUserDto);
 	}
 
+	/**
+	 * @see CompanyUserService#patchCompanyUser(Long, Map)
+	 */
 	@LogExecutionContext
 	@Override
 	public CompanyUserDto patchCompanyUser(final Long userId, final Map<String, String> map) {
@@ -59,16 +76,25 @@ public class CompanyUserServiceImpl implements CompanyUserService {
 		return update(userId, companyUserDto);
 	}
 	
+	/**
+	 * @see CompanyUserService#deleteCompanyUser(Long)
+	 */
 	@LogExecutionContext
 	@Override
-	public String deleteCompanyUser(final Long userId) {
+	public Map<String, Object> deleteCompanyUser(final Long userId) {
 		final Optional<CompanyUser> existingCompanyUser = companyUserRepository.findById(userId);
 		final CompanyUser companyUser = existingCompanyUser.orElseThrow(() -> new CompanyUserNotFoundException(userId));
 		
 		companyUserRepository.delete(companyUser);
-		return String.format("The User with id %s is deleted ", userId);
+		Map<String, Object> result = new LinkedHashMap<>();
+		result.put("userId", userId);
+		result.put("deleted", true);
+		return result;
 	}
 	
+	/**
+	 * @see CompanyUserService#getCompanyUserDetails(Long)
+	 */
 	@LogExecutionContext
 	@Override
 	public CompanyUserDto getCompanyUserDetails(final Long userId) {
@@ -77,7 +103,10 @@ public class CompanyUserServiceImpl implements CompanyUserService {
 		final CompanyUserDto companyUserDto = companyUserMapper.companyUserEntityToDto(companyUser);
 		return companyUserDto;
 	}
-
+	
+	/**
+	 * @see CompanyUserService#getCompanyUserDetails(String)
+	 */
 	@LogExecutionContext
 	@Override
 	public CompanyUserDto getCompanyUserDetails(String email) {
@@ -85,7 +114,10 @@ public class CompanyUserServiceImpl implements CompanyUserService {
 		final CompanyUserDto companyUserDto = companyUserMapper.companyUserEntityToDto(companyUser);
 		return companyUserDto;
 	}
-
+	
+	/**
+	 * @see CompanyUserService#getCompanyUserDetails(String, String)
+	 */
 	@LogExecutionContext
 	@Override
 	public List<CompanyUserDto> getCompanyUserDetails(String firstname, String lastname) {
@@ -94,6 +126,9 @@ public class CompanyUserServiceImpl implements CompanyUserService {
 		return companyUserDtos;
 	}
 	
+	/**
+	 * @see CompanyUserService#getCompanyUserDetails()
+	 */
 	@LogExecutionContext
 	@Override
 	public List<CompanyUserDto> getCompanyUserDetails() {
@@ -108,10 +143,8 @@ public class CompanyUserServiceImpl implements CompanyUserService {
 			throw new CompanyUserNotFoundException();
 		}
 		
-		final boolean existsById = companyUserRepository.existsById(userId);
-		if(!existsById) {			
-			throw new CompanyUserNotFoundException();
-		}
+		final CompanyUser existingCompanyUser = companyUserRepository.findById(userId).
+				orElseThrow(() -> new CompanyUserNotFoundException(userId));
 
 		final String email = companyUserDto.getEmail();
 		final Optional<CompanyUser> otherCompanyUserWithEmail = companyUserRepository.findByEmail(email);
@@ -122,6 +155,7 @@ public class CompanyUserServiceImpl implements CompanyUserService {
 		
 		companyUserDto.setUserId(userId);
 		CompanyUser companyUser =  companyUserMapper.companyUserDtoToEntity(companyUserDto);
+		companyUser.setCreationDate(existingCompanyUser.getCreationDate());
 		
 		companyUser = companyUserRepository.save(companyUser);
 		
