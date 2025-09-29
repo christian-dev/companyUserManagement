@@ -60,7 +60,7 @@ Once the application is started, the API can be requested:
 * Register an user (POST method)
 * Get details on an user (GET method)
 * Get all users (GET method)
-* Get an user by emil (GET method)
+* Get an user by email (GET method)
 * Update an user (PUT method)
 * Partial update an user (PATCH method)
 * Delete an user (DELETE method)
